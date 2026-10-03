@@ -168,7 +168,7 @@ neural_network::neural_network(
 
     m_biasVectors.reserve(biasVectors.size());
     m_biasDeltas.reserve(biasVectors.size());
-    for (const math_vector<double>& biasVector : m_biasVectors)
+    for (const math_vector<double>& biasVector : biasVectors)
     {
         math_vector<double> vec(biasVector.size(), 0, m_resource);
         for (std::size_t i = 0; i < biasVector.size(); ++i)
