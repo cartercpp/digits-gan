@@ -141,21 +141,42 @@ neural_network::neural_network(
     double learningRate,
     std::pmr::memory_resource* resource
     )
-        : m_weightMatrices{weightMatrices, resource},
+        : m_weightMatrices{resource},
         m_weightDeltas{resource},
-        m_biasVectors{biasVectors, resource},
+        m_biasVectors{resource},
         m_biasDeltas{resource},
-        m_neuronsPerLayer{neuronsPerLayer, resource},
+        m_neuronsPerLayer{resource},
         m_learningRate{learningRate},
         m_resource{resource}
 {
-    m_weightDeltas.reserve(m_weightMatrices.size());
-    for (const matrix<double>& weightMatrix : m_weightMatrices)
-        m_weightDeltas.emplace_back(weightMatrix.rows(), weightMatrix.columns(), 0, m_resource);
+    m_neuronsPerLayer.reserve(neuronsPerLayer.size());
+    for (const std::size_t neurons : neuronsPerLayer)
+        m_neuronsPerLayer.push_back(neurons);
 
-    m_biasDeltas.reserve(m_biasVectors.size());
+    m_weightMatrices.reserve(weightMatrices.size());
+    m_weightDeltas.reserve(weightMatrices.size());
+    for (const matrix<double>& weightMatrix : weightMatrices)
+    {
+        matrix<double> mat(weightMatrix.rows(), weightMatrix.columns(), 0, m_resource);
+        for (std::size_t row = 0; row < weightMatrix.rows(); ++row)
+            for (std::size_t column = 0; column < weightMatrix.columns(); ++column)
+                mat[row][column] = weightMatrix[row][column];
+
+        m_weightMatrices.emplace_back(std::move(mat));
+        m_weightDeltas.emplace_back(weightMatrix.rows(), weightMatrix.columns(), 0, m_resource);
+    }
+
+    m_biasVectors.reserve(biasVectors.size());
+    m_biasDeltas.reserve(biasVectors.size());
     for (const math_vector<double>& biasVector : m_biasVectors)
+    {
+        math_vector<double> vec(biasVector.size(), 0, m_resource);
+        for (std::size_t i = 0; i < biasVector.size(); ++i)
+            vec[i] = biasVector[i];
+
+        m_biasVectors.emplace_back(std::move(vec));
         m_biasDeltas.emplace_back(biasVector.size(), 0, m_resource);
+    }
 }
 
 neural_network::neural_network(
@@ -163,7 +184,7 @@ neural_network::neural_network(
     double learningRate,
     std::pmr::memory_resource* resource
     )
-        : m_neuronsPerLayer{neuronsPerLayer},
+        : m_neuronsPerLayer{resource},
         m_learningRate{learningRate},
         m_resource{resource},
         m_weightMatrices{resource},
@@ -171,6 +192,10 @@ neural_network::neural_network(
         m_biasVectors{resource},
         m_biasDeltas{resource}
 {
+    m_neuronsPerLayer.reserve(neuronsPerLayer.size());
+    for (const std::size_t neurons : neuronsPerLayer)
+        m_neuronsPerLayer.push_back(neurons);
+    
     m_weightMatrices.reserve(m_neuronsPerLayer.size() - 1);
     m_weightDeltas.reserve(m_neuronsPerLayer.size() - 1);
     m_biasVectors.reserve(m_neuronsPerLayer.size() - 1);
